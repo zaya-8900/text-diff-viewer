@@ -844,6 +844,7 @@
             originalFilename.textContent = '';
             modifiedFilename.textContent = '';
             diffSection.style.display = 'none';
+            clearStorage();
         });
 
         clearOriginalBtn.addEventListener('click', () => {
@@ -896,6 +897,7 @@ greet(user, isFormal);`;
         function debounceCompare() {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
+                saveToStorage();
                 if (originalText.value || modifiedText.value) {
                     compare();
                 }
@@ -905,7 +907,7 @@ greet(user, isFormal);`;
         originalText.addEventListener('input', debounceCompare);
         modifiedText.addEventListener('input', debounceCompare);
 
-        // Copy diff to clipboard
+// Copy diff to clipboard
         function generateUnifiedDiff() {
             if (!currentDiffData) return '';
 
@@ -976,6 +978,47 @@ greet(user, isFormal);`;
         }
 
         copyDiffBtn.addEventListener('click', copyDiffToClipboard);
+
+        // localStorage persistence
+        const STORAGE_KEYS = {
+            original: 'diffViewer_original',
+            modified: 'diffViewer_modified'
+        };
+
+        function saveToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.original, originalText.value);
+                localStorage.setItem(STORAGE_KEYS.modified, modifiedText.value);
+            } catch (e) {
+                // localStorage not available (private browsing, quota exceeded)
+            }
+        }
+
+        function loadFromStorage() {
+            try {
+                const savedOriginal = localStorage.getItem(STORAGE_KEYS.original);
+                const savedModified = localStorage.getItem(STORAGE_KEYS.modified);
+                if (savedOriginal) originalText.value = savedOriginal;
+                if (savedModified) modifiedText.value = savedModified;
+                if (savedOriginal || savedModified) {
+                    debounceCompare();
+                }
+            } catch (e) {
+                // localStorage not available
+            }
+        }
+
+        function clearStorage() {
+            try {
+                localStorage.removeItem(STORAGE_KEYS.original);
+                localStorage.removeItem(STORAGE_KEYS.modified);
+            } catch (e) {
+                // localStorage not available
+            }
+        }
+
+        // Load saved content on startup
+        loadFromStorage()
     </script>
 </body>
 </html>
