@@ -243,6 +243,27 @@
             font-weight: 500;
         }
 
+        .diff-header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-copy {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-copy.copied {
+            background-color: var(--modified-color);
+            border-color: var(--modified-color);
+            color: #ffffff;
+        }
+
+        .copy-icon {
+            font-size: 0.9rem;
+        }
+
         .diff-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -468,6 +489,12 @@
         <section class="diff-section" id="diffSection" style="display: none;">
             <div class="diff-header">
                 <h2>Diff Result</h2>
+                <div class="diff-header-actions">
+                    <button class="btn btn-small btn-copy" id="copyDiffBtn" title="Copy diff to clipboard">
+                        <span class="copy-icon">📋</span>
+                        <span id="copyBtnText">Copy Diff</span>
+                    </button>
+                </div>
             </div>
             <div class="diff-container">
                 <div class="diff-panel">
@@ -527,6 +554,11 @@
         const uploadModifiedBtn = document.getElementById('uploadModifiedBtn');
         const originalFilename = document.getElementById('originalFilename');
         const modifiedFilename = document.getElementById('modifiedFilename');
+        const copyDiffBtn = document.getElementById('copyDiffBtn');
+        const copyBtnText = document.getElementById('copyBtnText');
+
+        // Store current diff data for copying
+        let currentDiffData = null;
 
         // Diff Algorithm - Longest Common Subsequence based
         function computeLCS(original, modified) {
@@ -612,6 +644,9 @@
         }
 
         function renderDiff(originalLines, modifiedLines, diffOps) {
+            // Store diff data for copying
+            currentDiffData = { originalLines, modifiedLines, diffOps };
+
             let originalHtml = '';
             let modifiedHtml = '';
             let originalLineNum = 0;
@@ -869,6 +904,78 @@ greet(user, isFormal);`;
 
         originalText.addEventListener('input', debounceCompare);
         modifiedText.addEventListener('input', debounceCompare);
+
+        // Copy diff to clipboard
+        function generateUnifiedDiff() {
+            if (!currentDiffData) return '';
+
+            const { originalLines, modifiedLines, diffOps } = currentDiffData;
+            const lines = [];
+
+            lines.push('--- Original');
+            lines.push('+++ Modified');
+            lines.push('');
+
+            for (const op of diffOps) {
+                switch (op.type) {
+                    case 'unchanged':
+                        lines.push('  ' + originalLines[op.originalIdx]);
+                        break;
+                    case 'removed':
+                        lines.push('- ' + originalLines[op.originalIdx]);
+                        break;
+                    case 'added':
+                        lines.push('+ ' + modifiedLines[op.modifiedIdx]);
+                        break;
+                    case 'changed':
+                        lines.push('- ' + originalLines[op.originalIdx]);
+                        lines.push('+ ' + modifiedLines[op.modifiedIdx]);
+                        break;
+                }
+            }
+
+            return lines.join('\n');
+        }
+
+        async function copyDiffToClipboard() {
+            const diffText = generateUnifiedDiff();
+            if (!diffText) {
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(diffText);
+
+                // Show success feedback
+                copyDiffBtn.classList.add('copied');
+                copyBtnText.textContent = 'Copied!';
+
+                setTimeout(() => {
+                    copyDiffBtn.classList.remove('copied');
+                    copyBtnText.textContent = 'Copy Diff';
+                }, 2000);
+            } catch (err) {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = diffText;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                copyDiffBtn.classList.add('copied');
+                copyBtnText.textContent = 'Copied!';
+
+                setTimeout(() => {
+                    copyDiffBtn.classList.remove('copied');
+                    copyBtnText.textContent = 'Copy Diff';
+                }, 2000);
+            }
+        }
+
+        copyDiffBtn.addEventListener('click', copyDiffToClipboard);
     </script>
 </body>
 </html>
