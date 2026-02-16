@@ -1,10 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Text Diff Viewer</title>
     <style>
+        :root {
+            /* Dark theme (default) */
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #252526;
+            --bg-tertiary: #2d2d2d;
+            --text-primary: #d4d4d4;
+            --text-secondary: #808080;
+            --text-muted: #858585;
+            --border-color: #3c3c3c;
+            --accent-color: #569cd6;
+            --btn-primary-bg: #0e639c;
+            --btn-primary-hover: #1177bb;
+            --original-color: #f48771;
+            --modified-color: #89d185;
+            --changed-color: #e3b341;
+            --line-added-bg: rgba(35, 134, 54, 0.2);
+            --line-added-num-bg: rgba(35, 134, 54, 0.3);
+            --line-removed-bg: rgba(218, 54, 51, 0.2);
+            --line-removed-num-bg: rgba(218, 54, 51, 0.3);
+            --line-changed-bg: rgba(227, 179, 65, 0.15);
+            --line-changed-num-bg: rgba(227, 179, 65, 0.25);
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --bg-tertiary: #e8e8e8;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-muted: #888888;
+            --border-color: #d0d0d0;
+            --accent-color: #0066cc;
+            --btn-primary-bg: #0066cc;
+            --btn-primary-hover: #0052a3;
+            --original-color: #d32f2f;
+            --modified-color: #388e3c;
+            --changed-color: #f57c00;
+            --line-added-bg: rgba(76, 175, 80, 0.15);
+            --line-added-num-bg: rgba(76, 175, 80, 0.25);
+            --line-removed-bg: rgba(244, 67, 54, 0.15);
+            --line-removed-num-bg: rgba(244, 67, 54, 0.25);
+            --line-changed-bg: rgba(255, 152, 0, 0.15);
+            --line-changed-num-bg: rgba(255, 152, 0, 0.25);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,9 +58,10 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background-color: #1e1e1e;
-            color: #d4d4d4;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
             min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         .container {
@@ -31,12 +77,12 @@
 
         header h1 {
             font-size: 1.8rem;
-            color: #569cd6;
+            color: var(--accent-color);
             margin-bottom: 8px;
         }
 
         header p {
-            color: #808080;
+            color: var(--text-secondary);
             font-size: 0.9rem;
         }
 
@@ -50,9 +96,9 @@
 
         .btn {
             padding: 8px 16px;
-            border: 1px solid #3c3c3c;
-            background-color: #2d2d2d;
-            color: #d4d4d4;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.9rem;
@@ -60,17 +106,23 @@
         }
 
         .btn:hover {
-            background-color: #3c3c3c;
-            border-color: #569cd6;
+            background-color: var(--border-color);
+            border-color: var(--accent-color);
         }
 
         .btn-primary {
-            background-color: #0e639c;
-            border-color: #0e639c;
+            background-color: var(--btn-primary-bg);
+            border-color: var(--btn-primary-bg);
+            color: #ffffff;
         }
 
         .btn-primary:hover {
-            background-color: #1177bb;
+            background-color: var(--btn-primary-hover);
+        }
+
+        .btn-theme {
+            font-size: 1.1rem;
+            padding: 8px 12px;
         }
 
         .input-section {
@@ -90,9 +142,9 @@
             justify-content: space-between;
             align-items: center;
             padding: 10px;
-            background-color: #252526;
+            background-color: var(--bg-secondary);
             border-radius: 4px 4px 0 0;
-            border: 1px solid #3c3c3c;
+            border: 1px solid var(--border-color);
             border-bottom: none;
         }
 
@@ -101,8 +153,8 @@
             font-weight: 500;
         }
 
-        .panel-header .original { color: #f48771; }
-        .panel-header .modified { color: #89d185; }
+        .panel-header .original { color: var(--original-color); }
+        .panel-header .modified { color: var(--modified-color); }
 
         .panel-title {
             display: flex;
@@ -112,7 +164,7 @@
 
         .filename {
             font-size: 0.8rem;
-            color: #808080;
+            color: var(--text-secondary);
             font-weight: normal;
             max-width: 150px;
             overflow: hidden;
@@ -141,21 +193,22 @@
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
             font-size: 13px;
             line-height: 1.5;
-            background-color: #1e1e1e;
-            color: #d4d4d4;
-            border: 1px solid #3c3c3c;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
             border-radius: 0 0 4px 4px;
             resize: vertical;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
         }
 
         .text-input:focus {
             outline: none;
-            border-color: #569cd6;
+            border-color: var(--accent-color);
         }
 
         .text-input.drag-over {
-            border-color: #569cd6;
-            background-color: #252526;
+            border-color: var(--accent-color);
+            background-color: var(--bg-secondary);
             border-style: dashed;
         }
 
@@ -179,9 +232,9 @@
             justify-content: space-between;
             align-items: center;
             padding: 10px 15px;
-            background-color: #252526;
+            background-color: var(--bg-secondary);
             border-radius: 4px 4px 0 0;
-            border: 1px solid #3c3c3c;
+            border: 1px solid var(--border-color);
             border-bottom: none;
         }
 
@@ -193,7 +246,7 @@
         .diff-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            border: 1px solid #3c3c3c;
+            border: 1px solid var(--border-color);
             border-radius: 0 0 4px 4px;
             overflow: hidden;
         }
@@ -203,23 +256,23 @@
         }
 
         .diff-panel:first-child {
-            border-right: 1px solid #3c3c3c;
+            border-right: 1px solid var(--border-color);
         }
 
         .diff-panel-header {
             padding: 8px 12px;
-            background-color: #2d2d2d;
+            background-color: var(--bg-tertiary);
             font-size: 0.85rem;
             font-weight: 500;
-            border-bottom: 1px solid #3c3c3c;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .diff-panel:first-child .diff-panel-header {
-            color: #f48771;
+            color: var(--original-color);
         }
 
         .diff-panel:last-child .diff-panel-header {
-            color: #89d185;
+            color: var(--modified-color);
         }
 
         .diff-content {
@@ -240,10 +293,10 @@
             min-width: 45px;
             padding: 0 8px;
             text-align: right;
-            color: #858585;
-            background-color: #1e1e1e;
+            color: var(--text-muted);
+            background-color: var(--bg-primary);
             user-select: none;
-            border-right: 1px solid #3c3c3c;
+            border-right: 1px solid var(--border-color);
         }
 
         .line-content {
@@ -254,38 +307,38 @@
         }
 
         .line-added {
-            background-color: rgba(35, 134, 54, 0.2);
+            background-color: var(--line-added-bg);
         }
 
         .line-added .line-number {
-            background-color: rgba(35, 134, 54, 0.3);
-            color: #89d185;
+            background-color: var(--line-added-num-bg);
+            color: var(--modified-color);
         }
 
         .line-added .line-content {
-            color: #89d185;
+            color: var(--modified-color);
         }
 
         .line-removed {
-            background-color: rgba(218, 54, 51, 0.2);
+            background-color: var(--line-removed-bg);
         }
 
         .line-removed .line-number {
-            background-color: rgba(218, 54, 51, 0.3);
-            color: #f48771;
+            background-color: var(--line-removed-num-bg);
+            color: var(--original-color);
         }
 
         .line-removed .line-content {
-            color: #f48771;
+            color: var(--original-color);
         }
 
         .line-changed {
-            background-color: rgba(227, 179, 65, 0.15);
+            background-color: var(--line-changed-bg);
         }
 
         .line-changed .line-number {
-            background-color: rgba(227, 179, 65, 0.25);
-            color: #e3b341;
+            background-color: var(--line-changed-num-bg);
+            color: var(--changed-color);
         }
 
         .line-unchanged {
@@ -293,11 +346,11 @@
         }
 
         .line-empty {
-            background-color: #252526;
+            background-color: var(--bg-secondary);
         }
 
         .line-empty .line-number {
-            background-color: #252526;
+            background-color: var(--bg-secondary);
         }
 
         .empty-state {
@@ -305,7 +358,7 @@
             align-items: center;
             justify-content: center;
             height: 200px;
-            color: #808080;
+            color: var(--text-secondary);
             font-style: italic;
         }
 
@@ -313,11 +366,12 @@
             display: flex;
             gap: 20px;
             padding: 10px 15px;
-            background-color: #252526;
-            border: 1px solid #3c3c3c;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
             border-top: none;
             border-radius: 0 0 4px 4px;
             font-size: 0.85rem;
+            flex-wrap: wrap;
         }
 
         .stat-item {
@@ -332,10 +386,10 @@
             border-radius: 50%;
         }
 
-        .stat-dot.added { background-color: #89d185; }
-        .stat-dot.removed { background-color: #f48771; }
-        .stat-dot.changed { background-color: #e3b341; }
-        .stat-dot.unchanged { background-color: #808080; }
+        .stat-dot.added { background-color: var(--modified-color); }
+        .stat-dot.removed { background-color: var(--original-color); }
+        .stat-dot.changed { background-color: var(--changed-color); }
+        .stat-dot.unchanged { background-color: var(--text-secondary); }
 
         @media (max-width: 900px) {
             .input-section {
@@ -356,7 +410,7 @@
 
             .diff-panel:first-child {
                 border-right: none;
-                border-bottom: 1px solid #3c3c3c;
+                border-bottom: 1px solid var(--border-color);
             }
         }
     </style>
@@ -372,6 +426,7 @@
             <button class="btn btn-primary" id="compareBtn">Compare</button>
             <button class="btn" id="clearAllBtn">Clear All</button>
             <button class="btn" id="sampleBtn">Load Sample</button>
+            <button class="btn btn-theme" id="themeToggleBtn" title="Toggle light/dark theme">🌙</button>
         </div>
 
         <section class="input-section">
@@ -429,6 +484,30 @@
     </div>
 
     <script>
+        // Theme management
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+
+        function getStoredTheme() {
+            return localStorage.getItem('diffViewerTheme') || 'dark';
+        }
+
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('diffViewerTheme', theme);
+            themeToggleBtn.textContent = theme === 'dark' ? '🌙' : '☀️';
+            themeToggleBtn.title = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+        }
+
+        // Initialize theme on load
+        setTheme(getStoredTheme());
+        themeToggleBtn.addEventListener('click', toggleTheme);
+
         // DOM Elements
         const originalText = document.getElementById('originalText');
         const modifiedText = document.getElementById('modifiedText');
