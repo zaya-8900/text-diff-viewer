@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Diff Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            color: #569cd6;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: #808080;
+            font-size: 0.9rem;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid #3c3c3c;
+            background-color: #2d2d2d;
+            color: #d4d4d4;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #3c3c3c;
+            border-color: #569cd6;
+        }
+
+        .btn-primary {
+            background-color: #0e639c;
+            border-color: #0e639c;
+        }
+
+        .btn-primary:hover {
+            background-color: #1177bb;
+        }
+
+        .input-section {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .text-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #252526;
+            border-radius: 4px 4px 0 0;
+            border: 1px solid #3c3c3c;
+            border-bottom: none;
+        }
+
+        .panel-header h3 {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .panel-header .original { color: #f48771; }
+        .panel-header .modified { color: #89d185; }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filename {
+            font-size: 0.8rem;
+            color: #808080;
+            font-weight: normal;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .panel-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 0.8rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .text-input {
+            width: 100%;
+            height: 250px;
+            padding: 12px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            border: 1px solid #3c3c3c;
+            border-radius: 0 0 4px 4px;
+            resize: vertical;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #569cd6;
+        }
+
+        .text-input.drag-over {
+            border-color: #569cd6;
+            background-color: #252526;
+            border-style: dashed;
+        }
+
+        .swap-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-swap {
+            padding: 12px;
+            font-size: 1.2rem;
+        }
+
+        .diff-section {
+            margin-top: 20px;
+        }
+
+        .diff-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: #252526;
+            border-radius: 4px 4px 0 0;
+            border: 1px solid #3c3c3c;
+            border-bottom: none;
+        }
+
+        .diff-header h2 {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .diff-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border: 1px solid #3c3c3c;
+            border-radius: 0 0 4px 4px;
+            overflow: hidden;
+        }
+
+        .diff-panel {
+            overflow-x: auto;
+        }
+
+        .diff-panel:first-child {
+            border-right: 1px solid #3c3c3c;
+        }
+
+        .diff-panel-header {
+            padding: 8px 12px;
+            background-color: #2d2d2d;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border-bottom: 1px solid #3c3c3c;
+        }
+
+        .diff-panel:first-child .diff-panel-header {
+            color: #f48771;
+        }
+
+        .diff-panel:last-child .diff-panel-header {
+            color: #89d185;
+        }
+
+        .diff-content {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            min-height: 200px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .diff-line {
+            display: flex;
+            min-height: 21px;
+        }
+
+        .line-number {
+            min-width: 45px;
+            padding: 0 8px;
+            text-align: right;
+            color: #858585;
+            background-color: #1e1e1e;
+            user-select: none;
+            border-right: 1px solid #3c3c3c;
+        }
+
+        .line-content {
+            flex: 1;
+            padding: 0 12px;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        .line-added {
+            background-color: rgba(35, 134, 54, 0.2);
+        }
+
+        .line-added .line-number {
+            background-color: rgba(35, 134, 54, 0.3);
+            color: #89d185;
+        }
+
+        .line-added .line-content {
+            color: #89d185;
+        }
+
+        .line-removed {
+            background-color: rgba(218, 54, 51, 0.2);
+        }
+
+        .line-removed .line-number {
+            background-color: rgba(218, 54, 51, 0.3);
+            color: #f48771;
+        }
+
+        .line-removed .line-content {
+            color: #f48771;
+        }
+
+        .line-changed {
+            background-color: rgba(227, 179, 65, 0.15);
+        }
+
+        .line-changed .line-number {
+            background-color: rgba(227, 179, 65, 0.25);
+            color: #e3b341;
+        }
+
+        .line-unchanged {
+            background-color: transparent;
+        }
+
+        .line-empty {
+            background-color: #252526;
+        }
+
+        .line-empty .line-number {
+            background-color: #252526;
+        }
+
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: #808080;
+            font-style: italic;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            padding: 10px 15px;
+            background-color: #252526;
+            border: 1px solid #3c3c3c;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            font-size: 0.85rem;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .stat-dot.added { background-color: #89d185; }
+        .stat-dot.removed { background-color: #f48771; }
+        .stat-dot.changed { background-color: #e3b341; }
+        .stat-dot.unchanged { background-color: #808080; }
+
+        @media (max-width: 900px) {
+            .input-section {
+                grid-template-columns: 1fr;
+            }
+
+            .swap-container {
+                order: -1;
+            }
+
+            .btn-swap {
+                transform: rotate(90deg);
+            }
+
+            .diff-container {
+                grid-template-columns: 1fr;
+            }
+
+            .diff-panel:first-child {
+                border-right: none;
+                border-bottom: 1px solid #3c3c3c;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Text Diff Viewer</h1>
+            <p>Compare two text snippets side-by-side with highlighted differences</p>
+        </header>
+
+        <div class="toolbar">
+            <button class="btn btn-primary" id="compareBtn">Compare</button>
+            <button class="btn" id="clearAllBtn">Clear All</button>
+            <button class="btn" id="sampleBtn">Load Sample</button>
+        </div>
+
+        <section class="input-section">
+            <div class="text-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <h3 class="original">Original</h3>
+                        <span class="filename" id="originalFilename"></span>
+                    </div>
+                    <div class="panel-actions">
+                        <input type="file" class="file-input" id="originalFileInput" accept=".txt,.json,.md,.js,.ts,.css,.html,.xml,.yaml,.yml,.py,.java,.c,.cpp,.h,.go,.rs,.rb,.php,.sh,.sql,.csv">
+                        <button class="btn btn-small" id="uploadOriginalBtn" title="Upload file">Upload</button>
+                        <button class="btn btn-small" id="clearOriginalBtn">Clear</button>
+                    </div>
+                </div>
+                <textarea class="text-input" id="originalText" placeholder="Paste text, drag & drop a file, or click Upload..."></textarea>
+            </div>
+
+            <div class="swap-container">
+                <button class="btn btn-swap" id="swapBtn" title="Swap texts">⇄</button>
+            </div>
+
+            <div class="text-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <h3 class="modified">Modified</h3>
+                        <span class="filename" id="modifiedFilename"></span>
+                    </div>
+                    <div class="panel-actions">
+                        <input type="file" class="file-input" id="modifiedFileInput" accept=".txt,.json,.md,.js,.ts,.css,.html,.xml,.yaml,.yml,.py,.java,.c,.cpp,.h,.go,.rs,.rb,.php,.sh,.sql,.csv">
+                        <button class="btn btn-small" id="uploadModifiedBtn" title="Upload file">Upload</button>
+                        <button class="btn btn-small" id="clearModifiedBtn">Clear</button>
+                    </div>
+                </div>
+                <textarea class="text-input" id="modifiedText" placeholder="Paste text, drag & drop a file, or click Upload..."></textarea>
+            </div>
+        </section>
+
+        <section class="diff-section" id="diffSection" style="display: none;">
+            <div class="diff-header">
+                <h2>Diff Result</h2>
+            </div>
+            <div class="diff-container">
+                <div class="diff-panel">
+                    <div class="diff-panel-header">Original</div>
+                    <div class="diff-content" id="diffOriginal"></div>
+                </div>
+                <div class="diff-panel">
+                    <div class="diff-panel-header">Modified</div>
+                    <div class="diff-content" id="diffModified"></div>
+                </div>
+            </div>
+            <div class="stats-bar" id="statsBar"></div>
+        </section>
+    </div>
+
+    <script>
+        // DOM Elements
+        const originalText = document.getElementById('originalText');
+        const modifiedText = document.getElementById('modifiedText');
+        const compareBtn = document.getElementById('compareBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const clearOriginalBtn = document.getElementById('clearOriginalBtn');
+        const clearModifiedBtn = document.getElementById('clearModifiedBtn');
+        const swapBtn = document.getElementById('swapBtn');
+        const sampleBtn = document.getElementById('sampleBtn');
+        const diffSection = document.getElementById('diffSection');
+        const diffOriginal = document.getElementById('diffOriginal');
+        const diffModified = document.getElementById('diffModified');
+        const statsBar = document.getElementById('statsBar');
+        const originalFileInput = document.getElementById('originalFileInput');
+        const modifiedFileInput = document.getElementById('modifiedFileInput');
+        const uploadOriginalBtn = document.getElementById('uploadOriginalBtn');
+        const uploadModifiedBtn = document.getElementById('uploadModifiedBtn');
+        const originalFilename = document.getElementById('originalFilename');
+        const modifiedFilename = document.getElementById('modifiedFilename');
+
+        // Diff Algorithm - Longest Common Subsequence based
+        function computeLCS(original, modified) {
+            const m = original.length;
+            const n = modified.length;
+            const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+
+            for (let i = 1; i <= m; i++) {
+                for (let j = 1; j <= n; j++) {
+                    if (original[i - 1] === modified[j - 1]) {
+                        dp[i][j] = dp[i - 1][j - 1] + 1;
+                    } else {
+                        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                    }
+                }
+            }
+
+            return dp;
+        }
+
+        function backtrackLCS(dp, original, modified, i, j) {
+            const result = [];
+
+            while (i > 0 && j > 0) {
+                if (original[i - 1] === modified[j - 1]) {
+                    result.unshift({ type: 'unchanged', originalIdx: i - 1, modifiedIdx: j - 1 });
+                    i--;
+                    j--;
+                } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+                    result.unshift({ type: 'removed', originalIdx: i - 1 });
+                    i--;
+                } else {
+                    result.unshift({ type: 'added', modifiedIdx: j - 1 });
+                    j--;
+                }
+            }
+
+            while (i > 0) {
+                result.unshift({ type: 'removed', originalIdx: i - 1 });
+                i--;
+            }
+
+            while (j > 0) {
+                result.unshift({ type: 'added', modifiedIdx: j - 1 });
+                j--;
+            }
+
+            return result;
+        }
+
+        function computeDiff(originalLines, modifiedLines) {
+            const dp = computeLCS(originalLines, modifiedLines);
+            const operations = backtrackLCS(dp, originalLines, modifiedLines, originalLines.length, modifiedLines.length);
+
+            // Post-process to detect "changed" lines (adjacent remove + add)
+            const processed = [];
+            let i = 0;
+
+            while (i < operations.length) {
+                const current = operations[i];
+
+                if (current.type === 'removed' && i + 1 < operations.length && operations[i + 1].type === 'added') {
+                    // This is a changed line
+                    processed.push({
+                        type: 'changed',
+                        originalIdx: current.originalIdx,
+                        modifiedIdx: operations[i + 1].modifiedIdx
+                    });
+                    i += 2;
+                } else {
+                    processed.push(current);
+                    i++;
+                }
+            }
+
+            return processed;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function renderDiff(originalLines, modifiedLines, diffOps) {
+            let originalHtml = '';
+            let modifiedHtml = '';
+            let originalLineNum = 0;
+            let modifiedLineNum = 0;
+
+            const stats = { added: 0, removed: 0, changed: 0, unchanged: 0 };
+
+            for (const op of diffOps) {
+                switch (op.type) {
+                    case 'unchanged':
+                        originalLineNum++;
+                        modifiedLineNum++;
+                        stats.unchanged++;
+                        originalHtml += `<div class="diff-line line-unchanged">
+                            <span class="line-number">${originalLineNum}</span>
+                            <span class="line-content">${escapeHtml(originalLines[op.originalIdx])}</span>
+                        </div>`;
+                        modifiedHtml += `<div class="diff-line line-unchanged">
+                            <span class="line-number">${modifiedLineNum}</span>
+                            <span class="line-content">${escapeHtml(modifiedLines[op.modifiedIdx])}</span>
+                        </div>`;
+                        break;
+
+                    case 'removed':
+                        originalLineNum++;
+                        stats.removed++;
+                        originalHtml += `<div class="diff-line line-removed">
+                            <span class="line-number">${originalLineNum}</span>
+                            <span class="line-content">${escapeHtml(originalLines[op.originalIdx])}</span>
+                        </div>`;
+                        modifiedHtml += `<div class="diff-line line-empty">
+                            <span class="line-number"></span>
+                            <span class="line-content"></span>
+                        </div>`;
+                        break;
+
+                    case 'added':
+                        modifiedLineNum++;
+                        stats.added++;
+                        originalHtml += `<div class="diff-line line-empty">
+                            <span class="line-number"></span>
+                            <span class="line-content"></span>
+                        </div>`;
+                        modifiedHtml += `<div class="diff-line line-added">
+                            <span class="line-number">${modifiedLineNum}</span>
+                            <span class="line-content">${escapeHtml(modifiedLines[op.modifiedIdx])}</span>
+                        </div>`;
+                        break;
+
+                    case 'changed':
+                        originalLineNum++;
+                        modifiedLineNum++;
+                        stats.changed++;
+                        originalHtml += `<div class="diff-line line-changed">
+                            <span class="line-number">${originalLineNum}</span>
+                            <span class="line-content">${escapeHtml(originalLines[op.originalIdx])}</span>
+                        </div>`;
+                        modifiedHtml += `<div class="diff-line line-changed">
+                            <span class="line-number">${modifiedLineNum}</span>
+                            <span class="line-content">${escapeHtml(modifiedLines[op.modifiedIdx])}</span>
+                        </div>`;
+                        break;
+                }
+            }
+
+            diffOriginal.innerHTML = originalHtml || '<div class="empty-state">No content</div>';
+            diffModified.innerHTML = modifiedHtml || '<div class="empty-state">No content</div>';
+
+            // Render stats
+            const total = stats.added + stats.removed + stats.changed + stats.unchanged;
+            statsBar.innerHTML = `
+                <div class="stat-item">
+                    <span class="stat-dot added"></span>
+                    <span>${stats.added} added</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-dot removed"></span>
+                    <span>${stats.removed} removed</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-dot changed"></span>
+                    <span>${stats.changed} changed</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-dot unchanged"></span>
+                    <span>${stats.unchanged} unchanged</span>
+                </div>
+                <div class="stat-item">
+                    <span>Total: ${total} lines</span>
+                </div>
+            `;
+
+            // Sync scroll between panels
+            syncScroll();
+        }
+
+        function syncScroll() {
+            const leftPanel = diffOriginal;
+            const rightPanel = diffModified;
+
+            leftPanel.onscroll = () => {
+                rightPanel.scrollTop = leftPanel.scrollTop;
+            };
+
+            rightPanel.onscroll = () => {
+                leftPanel.scrollTop = rightPanel.scrollTop;
+            };
+        }
+
+        function compare() {
+            const original = originalText.value;
+            const modified = modifiedText.value;
+
+            if (!original && !modified) {
+                diffSection.style.display = 'none';
+                return;
+            }
+
+            const originalLines = original.split('\n');
+            const modifiedLines = modified.split('\n');
+
+            const diffOps = computeDiff(originalLines, modifiedLines);
+            renderDiff(originalLines, modifiedLines, diffOps);
+
+            diffSection.style.display = 'block';
+        }
+
+        // File handling
+        function handleFile(file, textArea, filenameSpan) {
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                textArea.value = e.target.result;
+                filenameSpan.textContent = file.name;
+                filenameSpan.title = file.name;
+                debounceCompare();
+            };
+            reader.onerror = () => {
+                alert('Error reading file: ' + file.name);
+            };
+            reader.readAsText(file);
+        }
+
+        function setupDragAndDrop(textArea, filenameSpan) {
+            textArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                textArea.classList.add('drag-over');
+            });
+
+            textArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                textArea.classList.remove('drag-over');
+            });
+
+            textArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                textArea.classList.remove('drag-over');
+
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0], textArea, filenameSpan);
+                }
+            });
+        }
+
+        setupDragAndDrop(originalText, originalFilename);
+        setupDragAndDrop(modifiedText, modifiedFilename);
+
+        // File input handlers
+        uploadOriginalBtn.addEventListener('click', () => originalFileInput.click());
+        uploadModifiedBtn.addEventListener('click', () => modifiedFileInput.click());
+
+        originalFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0], originalText, originalFilename);
+            }
+        });
+
+        modifiedFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0], modifiedText, modifiedFilename);
+            }
+        });
+
+        // Event Listeners
+        compareBtn.addEventListener('click', compare);
+
+        clearAllBtn.addEventListener('click', () => {
+            originalText.value = '';
+            modifiedText.value = '';
+            originalFilename.textContent = '';
+            modifiedFilename.textContent = '';
+            diffSection.style.display = 'none';
+        });
+
+        clearOriginalBtn.addEventListener('click', () => {
+            originalText.value = '';
+            originalFilename.textContent = '';
+        });
+
+        clearModifiedBtn.addEventListener('click', () => {
+            modifiedText.value = '';
+            modifiedFilename.textContent = '';
+        });
+
+        swapBtn.addEventListener('click', () => {
+            const tempText = originalText.value;
+            originalText.value = modifiedText.value;
+            modifiedText.value = tempText;
+
+            const tempFilename = originalFilename.textContent;
+            originalFilename.textContent = modifiedFilename.textContent;
+            modifiedFilename.textContent = tempFilename;
+        });
+
+        sampleBtn.addEventListener('click', () => {
+            originalText.value = `function greet(name) {
+    console.log("Hello, " + name);
+    return true;
+}
+
+const user = "World";
+greet(user);`;
+
+            modifiedText.value = `function greet(name, formal) {
+    if (formal) {
+        console.log("Good day, " + name);
+    } else {
+        console.log("Hello, " + name);
+    }
+    return true;
+}
+
+const user = "World";
+const isFormal = false;
+greet(user, isFormal);`;
+
+            compare();
+        });
+
+        // Auto-compare on input (with debounce)
+        let debounceTimer;
+        function debounceCompare() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                if (originalText.value || modifiedText.value) {
+                    compare();
+                }
+            }, 500);
+        }
+
+        originalText.addEventListener('input', debounceCompare);
+        modifiedText.addEventListener('input', debounceCompare);
+    </script>
+</body>
+</html>
