@@ -16,6 +16,8 @@ A single-file HTML tool for comparing two text files/snippets side-by-side with 
 - **Statistics** - View counts of added, removed, changed, and unchanged lines
 - **Responsive design** - Works on desktop and mobile
 - **Dark theme** - Easy on the eyes
+- **localStorage persistence** - Automatically saves and restores your last comparison
+- **Keyboard shortcuts** - Ctrl+Enter (compare), Ctrl+S (swap), Ctrl+Shift+C (clear)
 
 ## Supported File Types
 
